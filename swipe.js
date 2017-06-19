@@ -34,6 +34,8 @@ function Swipe(container, options) {
   var speed = options.speed || 300;
   options.continuous = options.continuous !== undefined ? options.continuous : true;
 
+  var controller = false;
+
   function setup() {
 
     // cache slides
@@ -239,7 +241,6 @@ function Swipe(container, options) {
   var events = {
 
     handleEvent: function(event) {
-
       switch (event.type) {
         case 'touchstart': this.start(event); break;
         case 'touchmove': this.move(event); break;
@@ -277,9 +278,14 @@ function Swipe(container, options) {
       // reset delta and end measurements
       delta = {};
 
+      if (options && options.swipeController) {
+        controller = options.swipeController(index);
+      }
+
       // attach touchmove and touchend listeners
       element.addEventListener('touchmove', this, false);
       element.addEventListener('touchend', this, false);
+
 
     },
     move: function(event) {
@@ -295,6 +301,20 @@ function Swipe(container, options) {
       delta = {
         x: touches.pageX - start.x,
         y: touches.pageY - start.y
+      }
+
+      if (controller) {
+        if (!controller.left) {
+          if (delta.x > 0) {
+            delta.x = 0;
+          }
+        }
+
+        if (!controller.right) {
+          if (delta.x < 0) {
+            delta.x = 0;
+          }
+        }
       }
 
       // determine if scrolling test has run - one time test
@@ -485,6 +505,12 @@ function Swipe(container, options) {
       // cancel slideshow
       stop();
 
+      if (options && options.swipeController)
+        controller = options.swipeController(index);
+
+      if (controller && !controller.left)
+        return false;
+
       prev();
 
     },
@@ -493,8 +519,13 @@ function Swipe(container, options) {
       // cancel slideshow
       stop();
 
-      next();
+      if (options && options.swipeController)
+        controller = options.swipeController(index);
 
+      if (controller && !controller.right)
+        return false;
+
+      next();
     },
     stop: function() {
 
